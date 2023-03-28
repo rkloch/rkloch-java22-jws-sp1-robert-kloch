@@ -1,0 +1,20 @@
+{
+  "student1": {
+    "id": 1,
+    "name":"Robert",
+    "age":56,
+    "grade":"VG"
+  },
+  "student2": {
+    "id": 2,
+    "name":"Helena",
+    "age":37,
+    "grade":"G"
+  },
+  "student3": {
+    "id": 3,
+    "name":"Anders",
+    "age":40,
+    "grade":"IG"
+  }
+}
