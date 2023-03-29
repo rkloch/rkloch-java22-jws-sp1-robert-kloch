@@ -9,7 +9,6 @@ import java.net.Socket;
 public class Server {
     public static void main(String[] args) {
         System.out.println("Server är nu Redo");
-
         //Init stuff
         ServerSocket serverSocket;
         Socket socket;
@@ -103,22 +102,49 @@ public class Server {
         String[] urls = url.split("/");
 
         //Steg 3. Använd en SwitchCase för att kolla vilken data som skall användas
-        if (urls[0].equals("persons")) {
+        if(method.equals("post")){
+            //TODO post method
+        }
+        if (urls[0].equals("students")) {
             if (method.equals("get")) {
                 //VIll hämta data om personer
                 //TODO lägg till logik om det är specfik person som skall hämtas
+                if(urls.length == 2){
+                    JSONObject jsonData = new JSONObject();
+                    jsonData = (JSONObject) parser.parse(new FileReader("data/data.json"));
+                    System.out.println(jsonData.toJSONString());
 
-                //Skapa JSONReturn objektet
-                JSONObject jsonReturn = new JSONObject();
+                    JSONObject jsonStudent = new JSONObject();
+                    String s = "student" + urls[1];
+                    System.out.println(jsonData.get(s).toString());
+                    jsonStudent.put("student", (JSONObject) jsonData.get(s));
+                    System.out.println(jsonStudent.toJSONString());
+                    JSONObject jsonReturn = new JSONObject();
 
-                //Hämta data från JSON fil
-                jsonReturn.put("data", parser.parse(new FileReader("data/data.json")).toString());
+                    //Hämta data från JSON fil
+                    jsonReturn.put("data", jsonStudent);
 
-                //Inkluderat HTTP status code
-                jsonReturn.put("httpStatusCode", 200);
 
-                //Return
-                return jsonReturn.toJSONString();
+                    //Inkluderat HTTP status code
+                    jsonReturn.put("httpStatusCode", 200);
+                    System.out.println(jsonReturn.toJSONString());
+                    return jsonReturn.toJSONString();
+                }else {
+
+                    //Skapa JSONReturn objektet
+                    JSONObject jsonReturn = new JSONObject();
+
+                    //Hämta data från JSON fil
+                    jsonReturn.put("data", parser.parse(new FileReader("data/data.json")).toString());
+
+
+                    //Inkluderat HTTP status code
+                    jsonReturn.put("httpStatusCode", 200);
+
+
+                    //Return
+                    return jsonReturn.toJSONString();
+                }
             }
         }
         return "message Recieved";

@@ -89,7 +89,7 @@ public class Client {
         if (val.equals("1")) {//Skapa JSON objekt för att hämta data om alla personer. Stringifiera objekete och returnera det
 
             JSONObject jsonReturn = new JSONObject();
-            jsonReturn.put("httpURL", "persons");
+            jsonReturn.put("httpURL", "students");
             jsonReturn.put("httpMethod", "get");
 
             System.out.println(jsonReturn.toJSONString());
@@ -100,7 +100,7 @@ public class Client {
         }
         if (val.equals("2")) {//Skapa JSON objekt för att hämta data om alla personer. Stringifiera objekete och returnera det
             JSONObject jsonReturn = new JSONObject();
-            jsonReturn.put("httpURL", "persons");
+            jsonReturn.put("httpURL", "students/1/");
             jsonReturn.put("httpMethod", "get");
 
             System.out.println(jsonReturn.toJSONString());
@@ -127,17 +127,17 @@ public class Client {
             //TODO Kolla vad som har returnerats
 
             //Bygger upp ett JSONObjekt av den returnerade datan
-            JSONObject data = (JSONObject) parser.parse((String) serverResponse.get("data"));
+            JSONObject data = (JSONObject) parser.parse(serverResponse.get("data").toString());
 
             //Hämtar en lista av alla nycklar attribut i data och loopar sedan igenom dem
             Set<String> keys = data.keySet();
             for (String x : keys) {
                 //Hämtar varje person object som finns i data
-                JSONObject person = (JSONObject) data.get(x);
+                JSONObject student = (JSONObject) data.get(x);
 
                 //Skriv ut namnet på person
-                System.out.println(person.get("name"));
-                testReturn += person.get("name");
+                System.out.println(student.get("name"));
+                testReturn += student.get("name");
             }
         }
     }
