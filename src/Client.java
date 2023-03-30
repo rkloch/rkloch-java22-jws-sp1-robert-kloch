@@ -77,7 +77,7 @@ public class Client {
     static String userInput() {
         //Steg 1. Skriv ut en meny för användaren
         System.out.println("1. Hämta data");
-        System.out.println("2. Lägg till data");
+        System.out.println("2. Hämta data om specifik student med id");
 
         //Steg 2. Låta användaren göra ett val
         Scanner scan = new Scanner(System.in);
@@ -92,18 +92,19 @@ public class Client {
             jsonReturn.put("httpURL", "students");
             jsonReturn.put("httpMethod", "get");
 
-            System.out.println(jsonReturn.toJSONString());
-
             //Returnera JSON objekt
             return jsonReturn.toJSONString();
             //break;
         }
         if (val.equals("2")) {//Skapa JSON objekt för att hämta data om alla personer. Stringifiera objekete och returnera det
             JSONObject jsonReturn = new JSONObject();
-            jsonReturn.put("httpURL", "students/1/");
+            System.out.println("ID-nummer: ");
+            String idNumber = scan.nextLine();
+
+            jsonReturn.put("httpURL", "students/" + idNumber + "/");
             jsonReturn.put("httpMethod", "get");
 
-            System.out.println(jsonReturn.toJSONString());
+            //System.out.println(jsonReturn.toJSONString());
 
             //Returnera JSON objekt
             return jsonReturn.toJSONString();
@@ -115,7 +116,6 @@ public class Client {
     }
 
     static void openResponse(String resp) throws ParseException {
-        String testReturn = "";
         //Init Parser för att parsa till JSON Objekt
         JSONParser parser = new JSONParser();
 
@@ -136,8 +136,11 @@ public class Client {
                 JSONObject student = (JSONObject) data.get(x);
 
                 //Skriv ut namnet på person
-                System.out.println(student.get("name"));
-                testReturn += student.get("name");
+                System.out.println("Id: " + student.get("id"));
+                System.out.println("Name: " + student.get("name"));
+                System.out.println("Age: " + student.get("age"));
+                System.out.println("Grade: " + student.get("grade"));
+                System.out.println("---------------------------------------");
             }
         }
     }

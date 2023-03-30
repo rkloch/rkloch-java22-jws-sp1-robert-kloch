@@ -36,7 +36,6 @@ public class Server {
             //Initiera Reader och Writer och koppla dem till socket
             inputSR = new InputStreamReader(socket.getInputStream());
             outputSW = new OutputStreamWriter(socket.getOutputStream());
-
             bReader = new BufferedReader(inputSR);
             bWriter = new BufferedWriter(outputSW);
 
@@ -90,7 +89,7 @@ public class Server {
     }
     static String openUpData(String message) throws ParseException, IOException {
         System.out.println(message);
-        //Steg 1. Bygg upp JSON Obejct basserat på inkommande string
+        //Steg 1. Bygg upp JSON Object baserat på inkommande string
         JSONParser parser = new JSONParser();
         JSONObject jsonOb = (JSONObject) parser.parse(message);
 
@@ -98,13 +97,16 @@ public class Server {
         String url = jsonOb.get("httpURL").toString();
         String method = jsonOb.get("httpMethod").toString();
 
+
         //Steg 2.5. Dela upp URL med .split() metod
         String[] urls = url.split("/");
 
         //Steg 3. Använd en SwitchCase för att kolla vilken data som skall användas
         if(method.equals("post")){
+            String newStudentInfo = jsonOb.get("body").toString();
+
             //TODO post method
-        }
+        }else if(method.equals("get")){
         if (urls[0].equals("students")) {
             if (method.equals("get")) {
                 //VIll hämta data om personer
@@ -130,22 +132,20 @@ public class Server {
                     System.out.println(jsonReturn.toJSONString());
                     return jsonReturn.toJSONString();
                 }else {
-
                     //Skapa JSONReturn objektet
                     JSONObject jsonReturn = new JSONObject();
 
                     //Hämta data från JSON fil
                     jsonReturn.put("data", parser.parse(new FileReader("data/data.json")).toString());
 
-
                     //Inkluderat HTTP status code
                     jsonReturn.put("httpStatusCode", 200);
-
 
                     //Return
                     return jsonReturn.toJSONString();
                 }
             }
+        }
         }
         return "message Recieved";
     }
