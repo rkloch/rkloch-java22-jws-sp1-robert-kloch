@@ -4,15 +4,13 @@ import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.net.*;
-import java.util.Iterator;
 import java.util.Scanner;
 import java.util.Set;
 
 
 public class Client {
     public static void main(String[] args) {
-        System.out.println("Client är nu redo");
-
+        System.out.println("Client startas");
         //Init stuff. Set as null to be initialized as "something"
         Socket socket = null;
         InputStreamReader inputSR = null;
@@ -31,13 +29,13 @@ public class Client {
             bReader = new BufferedReader(inputSR);
             bWriter = new BufferedWriter(outputSW);
 
-            //Initiera Scanner för att skriva i konsol
-
-
             while (true) {
-                //Anroppar meny för användare, låter dem göra ett val.
-                //Valet returneras som ett färdigt JSON string
+                //Anropar meny för användare, låter dem göra ett val.
                 String message = userInput();
+                //Ifall message är error pga inte korrekt input så körs userInput() igen
+                while(message.equals("error")){
+                    message = userInput();
+                }
 
                 //Skicka meddelande till server
                 bWriter.write(message);
@@ -49,9 +47,6 @@ public class Client {
 
                 //Anropa openResponse metod med server response
                 openResponse(resp);
-
-                //Avsluta om QUIT
-                //if (message.equalsIgnoreCase("quit")) break;
             }
         } catch (UnknownHostException e) {
             System.out.println(e);
@@ -75,44 +70,56 @@ public class Client {
     }
 
     static String userInput() {
-        //Steg 1. Skriv ut en meny för användaren
+        //Skriver ut en meny för användaren
         System.out.println("1. Hämta data");
         System.out.println("2. Hämta data om specifik student med id");
+        System.out.println("3. Lägg till student");
 
-        //Steg 2. Låta användaren göra ett val
+        //Användaren gör val
         Scanner scan = new Scanner(System.in);
-        System.out.print("Skriv in ditt menyval: ");
-
+        System.out.print("Ditt val: ");
         String val = scan.nextLine();
+        JSONObject jsonReturn = new JSONObject();
 
-        //Steg 3. Bearbeta användarens val
-        if (val.equals("1")) {//Skapa JSON objekt för att hämta data om alla personer. Stringifiera objekete och returnera det
+        switch (val) {
+            case "1" -> {
+                // Hämtar all data
+                jsonReturn.put("httpURL", "students");
+                jsonReturn.put("httpMethod", "get");
+                return jsonReturn.toJSONString();
+            }
+            case "2" -> {
+                //Hämtar specifik student med idnummer
+                System.out.println("ID-nummer: ");
+                String idNumber = scan.nextLine();
+                jsonReturn.put("httpURL", "students/" + idNumber + "/");
+                jsonReturn.put("httpMethod", "get");
 
-            JSONObject jsonReturn = new JSONObject();
-            jsonReturn.put("httpURL", "students");
-            jsonReturn.put("httpMethod", "get");
-
-            //Returnera JSON objekt
-            return jsonReturn.toJSONString();
-            //break;
+                //Returnera JSON objekt
+                return jsonReturn.toJSONString();
+            }
+            case "3" -> {
+                //Skapar ny student och skickar postmethod med data
+                System.out.println("Skriv in informationen om studenten");
+                System.out.println("Namn: ");
+                String name = scan.nextLine();
+                System.out.println("Ålder: ");
+                String age = scan.nextLine();
+                System.out.println("Betyg: ");
+                String grade = scan.nextLine();
+                jsonReturn.put("httpMethod", "post");
+                JSONObject bodyJson = new JSONObject();
+                bodyJson.put("name", name);
+                bodyJson.put("age", age);
+                bodyJson.put("grade", grade);
+                jsonReturn.put("data", bodyJson);
+                return jsonReturn.toJSONString();
+            }
+            default -> {
+                System.out.println("Felaktig input, prova igen");
+                return "error";
+            }
         }
-        if (val.equals("2")) {//Skapa JSON objekt för att hämta data om alla personer. Stringifiera objekete och returnera det
-            JSONObject jsonReturn = new JSONObject();
-            System.out.println("ID-nummer: ");
-            String idNumber = scan.nextLine();
-
-            jsonReturn.put("httpURL", "students/" + idNumber + "/");
-            jsonReturn.put("httpMethod", "get");
-
-            //System.out.println(jsonReturn.toJSONString());
-
-            //Returnera JSON objekt
-            return jsonReturn.toJSONString();
-            //break;
-        }
-
-
-        return "error";
     }
 
     static void openResponse(String resp) throws ParseException {
@@ -124,23 +131,27 @@ public class Client {
 
         //Kollar om respons lyckas
         if ("200".equals(serverResponse.get("httpStatusCode").toString())) {
-            //TODO Kolla vad som har returnerats
 
             //Bygger upp ett JSONObjekt av den returnerade datan
             JSONObject data = (JSONObject) parser.parse(serverResponse.get("data").toString());
-
             //Hämtar en lista av alla nycklar attribut i data och loopar sedan igenom dem
             Set<String> keys = data.keySet();
             for (String x : keys) {
                 //Hämtar varje person object som finns i data
                 JSONObject student = (JSONObject) data.get(x);
 
-                //Skriv ut namnet på person
-                System.out.println("Id: " + student.get("id"));
-                System.out.println("Name: " + student.get("name"));
-                System.out.println("Age: " + student.get("age"));
-                System.out.println("Grade: " + student.get("grade"));
+                //Skriv ut information om studenten
                 System.out.println("---------------------------------------");
+                System.out.println("Id: " + student.get("id"));
+                System.out.println("Namn: " + student.get("name"));
+                System.out.println("Ålder: " + student.get("age"));
+                System.out.println("Betyg: " + student.get("grade"));
+                System.out.println("---------------------------------------");
+            }
+        }else{
+            //Ifall idnumret inte finns
+            if("400".equals(serverResponse.get("httpStatusCode").toString())){
+                System.out.println("Felaktigt idnummer, försök igen");
             }
         }
     }

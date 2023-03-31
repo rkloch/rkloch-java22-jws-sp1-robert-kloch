@@ -7,7 +7,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, ParseException {
         System.out.println("Server är nu Redo");
         //Init stuff
         ServerSocket serverSocket;
@@ -16,9 +16,11 @@ public class Server {
         OutputStreamWriter outputSW;
         BufferedReader bReader;
         BufferedWriter bWriter;
+        JSONParser parser = new JSONParser();
+        // Hämtar JSONfil för att användning senare, TODO skriva till fil
+        JSONObject jsonData = (JSONObject) parser.parse(new FileReader("data/data.json"));
 
         //Starta Servern
-
         try {
             //Kontrollera att Socket nummer är ledig. Avbryt om socket är upptagen
             serverSocket = new ServerSocket(4321);
@@ -28,7 +30,6 @@ public class Server {
             System.out.println(e);
             return;
         }
-
         try {
             //Väntar på specifik socket efter trafik
             socket = serverSocket.accept();
@@ -41,10 +42,9 @@ public class Server {
 
             while (true) {
                 //Hämta klientens meddelande och skicka den till openUpData()
-                //Returnerar ett färdigt JSON objekt som skall tillbaka till klienten
+                //Returnerar ett färdigt JSON objekt som String som skall tillbaka till klienten
                 String message = bReader.readLine();
-                String returnData = openUpData(message);
-
+                String returnData = openUpData(message, jsonData);
                 System.out.println("Message Recieved and sent back");
 
                 //Skicka acknoledgement eller svar tillbaka
@@ -67,86 +67,76 @@ public class Server {
         } catch (ParseException e) {
             System.out.println(e);
         } finally {
-            System.out.println("Server Avslutas");
+            System.out.println("Server avslutas");
         }
     }
-    static void fetchJsonFromFile() throws IOException, ParseException {
 
-
-        //Hämta data från JSON fil
-        JSONObject fetchData = (JSONObject) new JSONParser().parse(new FileReader("data/data.json"));
-
-        //Konvertera data till ett JSONObject
-        JSONObject p1 = (JSONObject) fetchData.get("student1");
-        JSONObject p2 = (JSONObject) fetchData.get("student2");
-
-        //Hämta och skriv ut data
-        String nameP1=p1.get("name").toString(), nameP2=p2.get("name").toString();
-        int ageP1= Integer.parseInt(p1.get("age").toString()) , ageP2=Integer.parseInt(p2.get("age").toString());
-
-        System.out.println("Mitt namn är " + nameP1 + " och jag är " + ageP1 + " år gammal.");
-        System.out.println("Mitt namn är " + nameP2 + " och jag är " + ageP2 + " år gammal.");
-    }
-    static String openUpData(String message) throws ParseException, IOException {
-        System.out.println(message);
-        //Steg 1. Bygg upp JSON Object baserat på inkommande string
+    static String openUpData(String message, JSONObject jsonData) throws ParseException, IOException {
+        //Bygger upp JSON Object baserat på inkommande string
         JSONParser parser = new JSONParser();
         JSONObject jsonOb = (JSONObject) parser.parse(message);
 
-        //Steg 2. Läs av URL och HTTP-metod för att veta vad klienten vill
-        String url = jsonOb.get("httpURL").toString();
+        //Läs av URL och HTTP-metod för att veta vad klienten vill
+        String url = jsonOb.containsKey("httpURL") ? jsonOb.get("httpURL").toString() : "";
         String method = jsonOb.get("httpMethod").toString();
 
-
-        //Steg 2.5. Dela upp URL med .split() metod
+        //Dela upp URL med .split() metod
         String[] urls = url.split("/");
 
-        //Steg 3. Använd en SwitchCase för att kolla vilken data som skall användas
+        //Logik för metod, hur informationen ska bearbetas och returneras
         if(method.equals("post")){
-            String newStudentInfo = jsonOb.get("body").toString();
+            JSONObject newStudentData = (JSONObject) jsonOb.get("data");
+            //Ger student idnummer, stigande nummer
+            //lägger till i jsonData för att kunnas hämtas senare
+            newStudentData.put("id", (jsonData.size() + 1));
+            jsonData.put("student" + (jsonData.size() + 1), newStudentData);
+            JSONObject studentJson = new JSONObject();
+            studentJson.put("student", newStudentData);
+            JSONObject jsonReturn = new JSONObject();
+            //Inkluderar HTTP status code och data och returnerar
+            jsonReturn.put("httpStatusCode", 200);
+            jsonReturn.put("data", studentJson);
+            return jsonReturn.toJSONString();
 
-            //TODO post method
         }else if(method.equals("get")){
-        if (urls[0].equals("students")) {
-            if (method.equals("get")) {
-                //VIll hämta data om personer
-                //TODO lägg till logik om det är specfik person som skall hämtas
+                //Ifall urlen har argument för id så returneras bara en student
                 if(urls.length == 2){
-                    JSONObject jsonData = new JSONObject();
-                    jsonData = (JSONObject) parser.parse(new FileReader("data/data.json"));
-                    System.out.println(jsonData.toJSONString());
-
                     JSONObject jsonStudent = new JSONObject();
-                    String s = "student" + urls[1];
-                    System.out.println(jsonData.get(s).toString());
-                    jsonStudent.put("student", (JSONObject) jsonData.get(s));
+                    String studentWithId = "student" + urls[1];
+                    //Kollar om idet inte existerar
+                    if(!jsonData.containsKey(studentWithId)){
+                        JSONObject jsonReturn = new JSONObject();
+                        //Inkluderar 400 HTTP status code ifall id inte existerar
+                        jsonReturn.put("httpStatusCode", 400);
+                        return jsonReturn.toJSONString();
+                    }
+
+                    jsonStudent.put("student", (JSONObject) jsonData.get(studentWithId));
                     System.out.println(jsonStudent.toJSONString());
                     JSONObject jsonReturn = new JSONObject();
-
-                    //Hämta data från JSON fil
                     jsonReturn.put("data", jsonStudent);
 
-
-                    //Inkluderat HTTP status code
+                    //Inkluderar HTTP status code
                     jsonReturn.put("httpStatusCode", 200);
                     System.out.println(jsonReturn.toJSONString());
                     return jsonReturn.toJSONString();
                 }else {
+                    //returnerar alla studenter
                     //Skapa JSONReturn objektet
                     JSONObject jsonReturn = new JSONObject();
 
                     //Hämta data från JSON fil
-                    jsonReturn.put("data", parser.parse(new FileReader("data/data.json")).toString());
+                    jsonReturn.put("data", jsonData);
 
                     //Inkluderat HTTP status code
                     jsonReturn.put("httpStatusCode", 200);
 
                     //Return
                     return jsonReturn.toJSONString();
-                }
+
             }
+
         }
-        }
-        return "message Recieved";
+        return "Message Recieved";
     }
 }
